@@ -3,5 +3,5 @@ remote computer or shares and show directory sizes in very nice view
 
 Require PowerShell 5.1
 
-For non commercial use only 
+For non commercial use only. 
 Chernigov Eugeniy 2024
