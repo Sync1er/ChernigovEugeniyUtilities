@@ -3,7 +3,7 @@ PowerShell scripts for Windows PC
 
 ScanFolderSize.cmd 
 ----------------------------------------------------------------------------------------------------------
-it's a PowerShell script with GUI in cmd file, allow you to scan your disk folders, 
+It's a PowerShell script with GUI in cmd file, allow you to scan your disk folders, 
 remote computer or shares and show directory sizes in very nice view 
 ----------------------------------------------------------------------------------------------------------
 
