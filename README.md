@@ -7,6 +7,7 @@ it's a PowerShell script with GUI in cmd file, allow you to scan your disk folde
 remote computer or shares and show directory sizes in very nice view 
 ----------------------------------------------------------------------------------------------------------
 
+
 ScanPC.cmd 
 ----------------------------------------------------------------------------------------------------------
 It's a PowerShell script with GUI in cmd file. With this script you can get information about
