@@ -19,8 +19,8 @@ Function Prompt {"::"}
 if(-not $comp){$comp=$env:COMPUTERNAME}
 $jobCount=4
 $excl="GENUINEINTEL","PRINTENUM","MSRRAS","}\"
-$hide="RAS Async Adapter","WAN Miniport","Virtual Adapter","FAX","Microsoft XPS","OneNote","Š®à­¥¢ ï ®ç¥à¥¤ì ¯¥ç â¨","PDF","Microsoft Kernel Debug Network Adapter","HTREE"
-$repl="Intel(R) Core(TM) ","11th Gen Intel(R) Core(TM) ","Intel(R) ","System Product Name"," 82371AB/EB PCI Bus Master"," To be filled by O.E.M."," Virtual Platform"," Express Chipset Family"," Express Chipset","\(ª®à¯®à æ¨ï Œ ©ªà®á®äâ - WDDM 1.1\)"," ¡®à ¬¨ªà®áå¥¬ ","‘¥¬¥©áâ¢® ­ ¡®à®¢ ¬¨ªà®áå¥¬ ","/C200 Series 6 Port","6th Generation Core Processor Family Platform "," Family Controller","APU with Radeon(tm) HD Graphics"," Storage Controllers"," Universal Host Controller","\(Œ ©ªà®á®äâ\)","Series/C200 Series Chipset Family USB ","Š®à­¥¢®© ","®á«¥¤®¢ â¥«ì­ë© ¯®àâ "," áè¨à¥­­ë© "," áè¨àï¥¬ë© ","‘â ­¤ àâ­ë© "," Enhanced Host Controller"," Storage Controller"," Chipset Family"," LaserJet Professional"
+$hide="RAS Async Adapter","WAN Miniport","Virtual Adapter","FAX","Microsoft XPS","OneNote","ÐšÐ¾Ñ€Ð½ÐµÐ²Ð°Ñ Ð¾Ñ‡ÐµÑ€ÐµÐ´ÑŒ Ð¿ÐµÑ‡Ð°Ñ‚Ð¸","PDF","Microsoft Kernel Debug Network Adapter","HTREE"
+$repl="Intel(R) Core(TM) ","11th Gen Intel(R) Core(TM) ","Intel(R) ","System Product Name"," 82371AB/EB PCI Bus Master"," To be filled by O.E.M."," Virtual Platform"," Express Chipset Family"," Express Chipset","\(ÐºÐ¾Ñ€Ð¿Ð¾Ñ€Ð°Ñ†Ð¸Ñ ÐœÐ°Ð¹ÐºÑ€Ð¾ÑÐ¾Ñ„Ñ‚ - WDDM 1.1\)","ÐÐ°Ð±Ð¾Ñ€ Ð¼Ð¸ÐºÑ€Ð¾ÑÑ…ÐµÐ¼ ","Ð¡ÐµÐ¼ÐµÐ¹ÑÑ‚Ð²Ð¾ Ð½Ð°Ð±Ð¾Ñ€Ð¾Ð² Ð¼Ð¸ÐºÑ€Ð¾ÑÑ…ÐµÐ¼ ","/C200 Series 6 Port","6th Generation Core Processor Family Platform "," Family Controller","APU with Radeon(tm) HD Graphics"," Storage Controllers"," Universal Host Controller","\(ÐœÐ°Ð¹ÐºÑ€Ð¾ÑÐ¾Ñ„Ñ‚\)","Series/C200 Series Chipset Family USB ","ÐšÐ¾Ñ€Ð½ÐµÐ²Ð¾Ð¹ ","ÐŸÐ¾ÑÐ»ÐµÐ´Ð¾Ð²Ð°Ñ‚ÐµÐ»ÑŒÐ½Ñ‹Ð¹ Ð¿Ð¾Ñ€Ñ‚ ","Ð Ð°ÑÑˆÐ¸Ñ€ÐµÐ½Ð½Ñ‹Ð¹ ","Ð Ð°ÑÑˆÐ¸Ñ€ÑÐµÐ¼Ñ‹Ð¹ ","Ð¡Ñ‚Ð°Ð½Ð´Ð°Ñ€Ñ‚Ð½Ñ‹Ð¹ "," Enhanced Host Controller"," Storage Controller"," Chipset Family"," LaserJet Professional"
 $sprtr="-------------------------------------------------"
 $list= @()
 $SlctnStrt= 0
@@ -72,8 +72,8 @@ CR button shown than size of C:\`$Recycle.Bin more than 500MB
 $ScriptBlock= {
    $usrDir="$input" -split ';'
   $fldrs='Downloads;Pictures;Desktop;Videos;Documents;Music;AppData\Local\Temp;AppData\Local\Microsoft\Outlook' -split ';'       
-  $tmp=$fldrs | %{
-    $a=$($(Get-ChildItem -Path "$($usrDir -join '\')\$_" -Recurse -Force | %{$_.Length}) 2>$null  | Measure-Object  -Sum).Sum / 1MB
+  $tmp=$fldrs | ForEach {
+    $a=$($(Get-ChildItem -Path "$($usrDir -join '\')\$_" -Recurse -Force | ForEach {$_.Length}) 2>$null  | Measure-Object  -Sum).Sum / 1MB
     if($a -gt 100){@{usrDir=$usrDir[1];Dir=$_;Size=$a}}
   }
     if($tmp){$tmp}
@@ -85,18 +85,18 @@ function PrProgres {  $job=$((Get-Job | Where { $_.State -eq "Running"}).count)
 }
 
 function OutputSize ($usrSz){
-  ($usrSz.usrDir | Sort-Object -Unique | %{$usrDir=$_; @{usrDir=$usrDir;Sum= $(($usrSz | ?{$_.usrDir -eq $usrDir}).Size | Measure-Object -Sum).Sum}} | `
-` Sort-Object {$_.sum} -Descending).usrDir | %{
+  ($usrSz.usrDir | Sort-Object -Unique | ForEach {$usrDir=$_; @{usrDir=$usrDir;Sum= $(($usrSz | Where {$_.usrDir -eq $usrDir}).Size | Measure-Object -Sum).Sum}} | `
+` Sort-Object {$_.sum} -Descending).usrDir | ForEach {
     $usrDir=$_
-    $out= $usrSz | ?{$_.usrDir -eq $usrDir} | %{"`r`n"+$($_.Dir).PadRight(22," ")+$(" {0:n0}" -f $_.Size+" MB").PadLeft(10," ")}
-    $usrSz | ?{$_.usrDir -eq $usrDir} | %{ $global:sum+=$_.Size}
-    $usr= $null; $usr= $usrs | ?{$_.Login -eq $usrDir} | Select-Object -First 1
+    $out= $usrSz | Where {$_.usrDir -eq $usrDir} | ForEach {"`r`n"+$($_.Dir).PadRight(22," ")+$(" {0:n0}" -f $_.Size+" MB").PadLeft(10," ")}
+    $usrSz | Where {$_.usrDir -eq $usrDir} | ForEach { $global:sum+=$_.Size}
+    $usr= $null; $usr= $usrs | Where {$_.Login -eq $usrDir} | Select-Object -First 1
     $dep=(($usr.DistinguishedName -split ',OU=')[1] -split ',')[0]
     $fullname= Shrt "$($usr.fullname)"
     $clr="SlateBlue"; if(-not($usr.Enabled) -and $usr.fullname){$clr="red"}
     $txt1=$(addSp "$usrDir $($usr.LastLogin)"  22)
     $txt2=''; if($dep){$txt2="/$dep"}
-    $bar=(0..("$txt1$fullname$txt2".Length + 3) | %{'-'}) -join ''
+    $bar=(0..("$txt1$fullname$txt2".Length + 3) | ForEach {'-'}) -join ''
     Output "`n$txt1 "
     Output "$fullname" $clr
     Output $("$txt2`r`n$bar-$out`r`n`r`n")
@@ -196,7 +196,7 @@ $timer.add_tick({
     if($job){
       Output "`r`nlogged-in user - "
       $out= $($job | Receive-Job) 2>$null; $job | Remove-Job -Force
-      $out | %{$a=$( $_ -split ';'); Output $a[0] $a[1]}
+      $out | ForEach {$a=$( $_ -split ';'); Output $a[0] $a[1]}
       $global:step=3
     }
   }
@@ -241,14 +241,14 @@ function ChkCmp ($comp){
   if ( [system.Net.Sockets.TcpClient]::new().BeginConnect($comp,455,$null,$null).AsyncWaitHandle.WaitOne(150,$false)){return $true}
   $cnt=0; do {$cnt++; if($(ping -4 $comp -n 1 -w 200 | Select-String -Pattern 'TTL=')){return $True}} while ($cnt -lt 4)
 }
-function GetIP ($cmp){return $([System.Net.Dns]::GetHostAddresses("$cmp") | where {$_.AddressFamily -eq "InterNetwork"} | %{[string]$_}) 2>$nul}
-$ping={ping.exe $compAdr -n 1 -4 -w 300 | ?{$_} | Select-Object -First 1 -Skip 1}
+function GetIP ($cmp){return $([System.Net.Dns]::GetHostAddresses("$cmp") | where {$_.AddressFamily -eq "InterNetwork"} | ForEach {[string]$_}) 2>$nul}
+$ping={ping.exe $compAdr -n 1 -4 -w 300 | Where {$_} | Select-Object -First 1 -Skip 1}
 function ChkPrt ($cmp, $prt){[system.Net.Sockets.TcpClient]::new().BeginConnect($cmp,$prt,$null,$null).AsyncWaitHandle.WaitOne(500,$false)}
 function ChkOS ($comp){ ((Get-WmiObject -Class Win32_OperatingSystem -ComputerName $comp).name -split"\|")[0]}
 function addSp([string]$word, $len){ for ($i = $word.Length; $i -lt $len; $i++){$word+=" "}; return [string]$word }
-function Exclude ($Id) {$a=$True; $excl | %{if ("$Id" -like "*$_*"){$a=$False}}; return $a}
-function Replace ($word) {$repl | %{$word=$word -replace "$_",""}; return $word}
-function Hide ($word) {$a=$True; $hide | %{ if ("$word" -like "*$_*"){$a=$False}}; return $a}
+function Exclude ($Id) {$a=$True; $excl | ForEach {if ("$Id" -like "*$_*"){$a=$False}}; return $a}
+function Replace ($word) {$repl | ForEach {$word=$word -replace "$_",""}; return $word}
+function Hide ($word) {$a=$True; $hide | ForEach { if ("$word" -like "*$_*"){$a=$False}}; return $a}
 function Fltr ($id){
   if($id -like "*\*" -and $id -notlike "?:\*"){
     $id= ($id -split '\\') -replace "___",""
@@ -278,7 +278,7 @@ function Chek {
   $ip= GetIP $compAdr
   $cnt=2; while($cnt) {$cnt--; $a= $(.$ping); Output "$a`r`n" $(if($a -like '*TTL=*'){"green"; $png=$true}else{"red"})}
   if(-not $ip){Output "`r`nComputer $compAdr unaccessible.."; return}
-  if(-not $png){3389,5900,445,22,80,8080,1112,2575,10050 | %{  if(ChkPrt $compAdr 3389){$png=$true;Output "Port $_ open`r`n" "green"}}}
+  if(-not $png){3389,5900,445,22,80,8080,1112,2575,10050 | ForEach {  if(ChkPrt $compAdr 3389){$png=$true;Output "Port $_ open`r`n" "green"}}}
 
   if(-not $png){Output "`r`nComputer $compAdr unaccessible.."; return}
   if($CheckBox4.Checked){GetUsers}
@@ -296,20 +296,20 @@ function Chek {
 
   $dt= ((Get-WmiObject Win32_OperatingSystem -ComputerName $compAdr -ErrorVariable err).LastBootUpTime)
   if($dt){
-    $curTm= Get-Date -date  $(Get-WmiObject -Class Win32_CurrentTime -ComputerName $compAdr | ?{$_.__CLASS -eq 'Win32_LocalTime'} | select Day,Hour,Minute,Month,Year | %{"$($_.Year,$_.Month,$_.Day  -join '.') $($_.Hour,$_.Minute -join ':')"})
+    $curTm= Get-Date -date  $(Get-WmiObject -Class Win32_CurrentTime -ComputerName $compAdr | Where {$_.__CLASS -eq 'Win32_LocalTime'} | select Day,Hour,Minute,Month,Year | ForEach {"$($_.Year,$_.Month,$_.Day  -join '.') $($_.Hour,$_.Minute -join ':')"})
     $dt= Get-Date -date  $($dt.Substring(0,4)+'.'+$dt.Substring(4,2)+'.'+$dt.Substring(6,2)+' '+$dt.Substring(8,2)+':'+$dt.Substring(10,2))
     $tmUp=$curTm - $dt
-    if($dt){Output " System boot up date        Uptime`r`n --------------------ÿÿÿÿÿ-----------`r`n $($dt.ToString('dd MMM yyyy HH:mm'))         $($tmUp.Days)d $($tmUp.Hours):$("{0:d2}" -f $tmUp.Minutes)`r`n`r`n"}
+    if($dt){Output " System boot up date        Uptime`r`n --------------------Â Â Â Â Â -----------`r`n $($dt.ToString('dd MMM yyyy HH:mm'))         $($tmUp.Days)d $($tmUp.Hours):$("{0:d2}" -f $tmUp.Minutes)`r`n`r`n"}
   }
 
 
 if($os){
-  $a=Get-WmiObject win32_logicaldisk -Computername  $compAdr | select DeviceID, FreeSpace, Size, VolumeName | ?{$_.Size} 
+  $a= Get-WmiObject win32_logicaldisk -Computername  $compAdr | select DeviceID, FreeSpace, Size, VolumeName | Where {$_.Size} 
   if($a){
-    Output "`nÿDriveÿÿÿÿSizeÿÿFreeSpaceÿÿÿÿUsageÿÿÿVolumeÿName`n------------------------------------------------`n"
-    $a | %{
-      $free=$($(100-[int](100*($_.FreeSpaceÿ/ÿ$_.Size)))); $clr="DarkGreen"; if($free -ge 80){$clr="Chocolate"}; if($free -ge 90){$clr="Crimson"}
-      Output "ÿÿ$($_.DeviceID.PadRight(3,"ÿ"))ÿ$("$([int]($_.Sizeÿ/ÿ1GB))GB".PadLeft(8,"ÿ")) $("$([int]($_.FreeSpaceÿ/ÿ1GB))GB".PadLeft(10,"ÿ"))"; Output "ÿ$("$free%".PadLeft(8,"ÿ"))" $clr; Outputÿ"ÿÿÿ$($_.VolumeName)`n"
+    Output "`nÂ DriveÂ Â Â Â SizeÂ Â FreeSpaceÂ Â Â Â UsageÂ Â Â VolumeÂ Name`n------------------------------------------------`n"
+    $a | ForEach {
+      $free=$($(100-[int](100*($_.FreeSpaceÂ /Â $_.Size)))); $clr="DarkGreen"; if($free -ge 80){$clr="Chocolate"}; if($free -ge 90){$clr="Crimson"}
+      Output "Â Â $($_.DeviceID.PadRight(3,"Â "))Â $("$([int]($_.SizeÂ /Â 1GB))GB".PadLeft(8,"Â ")) $("$([int]($_.FreeSpaceÂ /Â 1GB))GB".PadLeft(10,"Â "))"; Output "Â $("$free%".PadLeft(8,"Â "))" $clr; OutputÂ "Â Â Â $($_.VolumeName)`n"
     }
     Output "------------------------------------------------`n"
   }
@@ -328,8 +328,6 @@ if($os -and $CheckBox3.Checked){CompHw}
   if(ChkPrt $compAdr 80  ){Output "`nHTTP port   80" "DarkOrange"}
   if(ChkPrt $compAdr 8080){Output "`nHTTP port 8080" "Blue"}
   if(ChkPrt $compAdr 1541){Output "`n 1C port  1541" "SeaGreen"}
-  if(ChkPrt $compAdr 11112){Output "`nPACs port 11112" "Brown"}
-  if(ChkPrt $compAdr 2575){Output "`nHL7 PACs port 2575" "DarkGreen"}
   if(ChkPrt $compAdr 10050){Output "`nZabbix port 10050" "DarkViolet"}
 
   PrProgres
@@ -342,37 +340,36 @@ if($os -and $CheckBox3.Checked){CompHw}
 
 function CompHw {
 
-  if ($ip){
-    $hst= ((get-wmiobject -list "StdRegProv" -computername $compAdr -namespace root\default).GetStringValue(2147483650,"SOFTWARE\Microsoft\Virtual Machine\Guest\Parameters","HostName")).sValue
-    $memSum=0; $model=""; $memModule=""
-    $cpu=(Get-WmiObject -Class CIM_Processor -ComputerName $compAdr).Name | Select-Object -first 1
-    $cpu=$cpu -replace '  ',' '; $cpu=$cpu -replace '  ',' '; $cpu=$cpu -replace '  ',' ' ;$cpu=$cpu -replace '  ',' '
-    $cpu=$cpu -replace ' CPU ',' '
-    $cpu=$cpu -replace 'Intel\(R\) Core\(TM\)2 Duo','Core2Duo'
-    $cpu=$cpu -replace 'Intel\(R\) Pentium\(R\)','Pentium'
-    $cpu=$cpu -replace 'Intel\(R\) Core\(TM\)','Core'
-    $cpu=$cpu -replace 'Intel\(R\) Celeron\(R\)','Celeron'
-    $cpu=$cpu -replace 'Intel\(R\) Xeon\(R\)','Xeon'
-    $cpu=$cpu -replace 'Pentium\(R\) Dual-Core','Pentium'
-    $cpu=$cpu -replace ' with Radeon\(tm\) HD Graphics',''
-    $cpu=$cpu -replace ' with Radeon Vega Mobile Gfx',''
-    $cpu=$cpu -replace ' with Radeon Vega Graphics','' 
-    $cpu=$cpu -replace ' @ ',' '
-    if ("$cpu" -ne ""){
-      $memModule=((Get-WmiObject -Class CIM_PhysicalMemory -ComputerName $compAdr).Capacity | ForEach {$mem=[int]($_*10/1073741824)/10; if($mem -ge 0.5){$mem; $memSum=$memSum+$mem}}) -join ' '
-      $sys=Get-WmiObject -Class CIM_ComputerSystem -ComputerName $compAdr
-      $model=$sys.model
-      $model=("$model").Trim()
-      $model=$model -replace 'System Product Name','Noname'
-      $model=$model -replace 'To be filled by O.E.M.','Noname'
-      $model=$model -replace 'VMware Virtual Platform','VMware' 
-      $cores=$sys.NumberOfLogicalProcessors
-      $compName=$sys.Name+$(if($sys.Domain){"."+$sys.Domain})
-      $hdd=""; Get-WmiObject -Class CIM_diskdrive -ComputerName $compAdr | %{if($_.Size -gt 0){$hdd+=[string]($_.Model+" "+[int]($_.Size / (1000000000)))+"GB`r`n"}}
-      Output "`r`n    $(addSp $compName 23) $ip`r`n-------------------------------------------------------`r`n$(addSp "CPU" 15) :  $cpu($cores core) `r`n$(addSp "Memory" 15) :  $memModule (Sum:$memSum`GB) `r`n$(addSp "Manufacturer" 15) :  $model"
-      $(if($hst){Output " ("; Output "$hst" "MediumVioletRed"; Output ")"}); Output "`r`n"
-      if($hdd){Output "`r`nHard Disk Drive:"; Output "`r`n$hdd" "DarkBlue"} 
-    }
+  if (-not $ip){return}
+  $hst= ((get-wmiobject -list "StdRegProv" -computername $compAdr -namespace root\default).GetStringValue(2147483650,"SOFTWARE\Microsoft\Virtual Machine\Guest\Parameters","HostName")).sValue
+  $memSum=0; $model=""; $memModule=""
+  $cpu=(Get-WmiObject -Class CIM_Processor -ComputerName $compAdr).Name | Select-Object -first 1
+  $cpu=$cpu -replace '  ',' '; $cpu=$cpu -replace '  ',' '; $cpu=$cpu -replace '  ',' ' ;$cpu=$cpu -replace '  ',' '
+  $cpu=$cpu -replace ' CPU ',' '
+  $cpu=$cpu -replace 'Intel\(R\) Core\(TM\)2 Duo','Core2Duo'
+  $cpu=$cpu -replace 'Intel\(R\) Pentium\(R\)','Pentium'
+  $cpu=$cpu -replace 'Intel\(R\) Core\(TM\)','Core'
+  $cpu=$cpu -replace 'Intel\(R\) Celeron\(R\)','Celeron'
+  $cpu=$cpu -replace 'Intel\(R\) Xeon\(R\)','Xeon'
+  $cpu=$cpu -replace 'Pentium\(R\) Dual-Core','Pentium'
+  $cpu=$cpu -replace ' with Radeon\(tm\) HD Graphics',''
+  $cpu=$cpu -replace ' with Radeon Vega Mobile Gfx',''
+  $cpu=$cpu -replace ' with Radeon Vega Graphics','' 
+  $cpu=$cpu -replace ' @ ',' '
+  if ("$cpu" -ne ""){
+    $memModule=((Get-WmiObject -Class CIM_PhysicalMemory -ComputerName $compAdr).Capacity | ForEach {$mem=[int]($_*10/1073741824)/10; if($mem -ge 0.5){$mem; $memSum=$memSum+$mem}}) -join ' '
+    $sys=Get-WmiObject -Class CIM_ComputerSystem -ComputerName $compAdr
+    $model=$sys.model
+    $model=("$model").Trim()
+    $model=$model -replace 'System Product Name','Noname'
+    $model=$model -replace 'To be filled by O.E.M.','Noname'
+    $model=$model -replace 'VMware Virtual Platform','VMware' 
+    $cores=$sys.NumberOfLogicalProcessors
+    $compName=$sys.Name+$(if($sys.Domain){"."+$sys.Domain})
+    $hdd=""; Get-WmiObject -Class CIM_diskdrive -ComputerName $compAdr | ForEach {if($_.Size -gt 0){$hdd+=[string]($_.Model+" "+[int]($_.Size / (1000000000)))+"GB`r`n"}}
+    Output "`r`n    $(addSp $compName 23) $ip`r`n-------------------------------------------------------`r`n$(addSp "CPU" 15) :  $cpu($cores core) `r`n$(addSp "Memory" 15) :  $memModule (Sum:$memSum`GB) `r`n$(addSp "Manufacturer" 15) :  $model"
+    $(if($hst){Output " ("; Output "$hst" "MediumVioletRed"; Output ")"}); Output "`r`n"
+    if($hdd){Output "`r`nHard Disk Drive:"; Output "`r`n$hdd" "DarkBlue"} 
   }
 }
 
@@ -380,7 +377,7 @@ function CompHw {
 
 function ShowUsr {
 
-  $Script={
+  Start-Job -InputObject "$(1*$CheckBox5.Checked);$compAdr" -Name 'ShowUsr' -ScriptBlock {
     $srch = New-Object -TypeName System.DirectoryServices.DirectorySearcher
     function Shrt($adUsr){ $adUsrSh=$adUsr; $a=($adUsr.trim() -split ' '); if($a[1] -and $a[2]){$adUsrSh=$a[0]+" "+($a[1])[0]+"."+($a[2])[0]+"."}; return $adUsrSh}
     $in="$input" -split ';'
@@ -393,8 +390,8 @@ function ShowUsr {
     $job | Remove-Job -force
     if(-not $query.TargetObject -and $query){
       $usrs=@(); $act=@(); $list=@(); $col="SaddleBrown"
-      $query | Select-Object -Skip 1 | %{
-        $a=($_ -split " " | ?{$_})[0]
+      $query | Select-Object -Skip 1 | ForEach {
+        $a=($_ -split " " | Where {$_})[0]
         if($_ -like "*console*"){$act+="$(.$getNm) (console)"}
         elseif($_ -like "*rdp-tcp*"){$act+="$(.$getNm) (rdp)"}
         else{$usrs+=$(.$getNm)}
@@ -407,7 +404,7 @@ function ShowUsr {
       $job | Remove-Job -force
       if($query.TargetObject){$err= $query.TargetObject; $col="red"}
       elseif(-not $query){$usrs="computer not responding"; $col="black"}
-      else{$list=@(); $usrs= $query -replace '"' | Select-Object -Skip 1 | %{
+      else{$list=@(); $usrs= $query -replace '"' | Select-Object -Skip 1 | ForEach {
           $qr= $_ -split ','; $indx=5; if($qr.count -gt 7){$indx=6}
           $a= ($qr[$indx] -split '\\')[1]
           if($a -notin $list){
@@ -421,14 +418,11 @@ function ShowUsr {
 
     $cnt=0; $lmt=7; $all=$act.Count+$usrs.Count; if($all -gt 7){$lmt=5}; 
     if("1" -eq $in[0]){$lmt= $all}
-    $act  | %{if($cnt -lt $lmt){"$_`r`n                 ;SlateBlue"; $cnt++}}
-    $usrs | %{if($cnt -lt $lmt){"$_`r`n                 ;$col"; $cnt++}}
+    $act  | ForEach {if($cnt -lt $lmt){"$_`r`n                 ;SlateBlue"; $cnt++}}
+    $usrs | ForEach {if($cnt -lt $lmt){"$_`r`n                 ;$col"; $cnt++}}
     if($all-$cnt){"..+$($all -$cnt)`r`n;SlateBlue"}
     "`r`n ;black"
   }
-
-  Start-Job -InputObject "$(1*$CheckBox5.Checked);$compAdr" -ScriptBlock $Script -Name 'ShowUsr'
-
 }
 
 function GetSizeInvoke {
@@ -437,14 +431,14 @@ function GetSizeInvoke {
     $compAdr="$input"
     $ScriptBlock= {
       $cnt=0
-      'C:\Windows\Temp','C:\$Recycle.Bin','C:\ProgramData\Microsoft\Diagnosis','C:\ProgramData\Microsoft\Search\Data\Applications\Windows\Windows.edb' | %{
-        $cnt++;$tmp=""; $a=[int](($(Get-ChildItem -Path "$_" -Recurse -force | %{$_.Length}) 2>$null | Measure-Object  -Sum).Sum / 1MB)
+      'C:\Windows\Temp','C:\$Recycle.Bin','C:\ProgramData\Microsoft\Diagnosis','C:\ProgramData\Microsoft\Search\Data\Applications\Windows\Windows.edb' | ForEach {
+        $cnt++;$tmp=""; $a=[int](($(Get-ChildItem -Path "$_" -Recurse -force | ForEach {$_.Length}) 2>$null | Measure-Object  -Sum).Sum / 1MB)
         if($a -ge 500 -or $cnt -le 2){$("`n$_ ").PadRight(22," ")+$("{0:n0}" -f $a+" MB`n").PadLeft(9," ")}
       }
       
       $fls='C:\hiberfil.sys','C:\pagefile.sys'
-      $fls | %{
-        $fl=$_; $tmp=""; $a=$(Get-ChildItem -Path 'C:\' -Force | ?{$_.FullName -eq $fl}).Length / 1MB 2>$null 
+      $fls | ForEach {
+        $fl=$_; $tmp=""; $a=$(Get-ChildItem -Path 'C:\' -Force | Where {$_.FullName -eq $fl}).Length / 1MB 2>$null 
         if($a -ge 1){$("`n$fl").PadRight(22," ")+$("{0:n0}" -f $a+" MB`n").PadLeft(9," ")}
       }
     }
@@ -453,51 +447,49 @@ function GetSizeInvoke {
 
   Start-Job -InputObject "$compAdr" -Name 'Users files Invoke' -ScriptBlock {
     $compAdr="$input"
-    $ScriptBlock= {
+    Invoke-Command -ComputerName $compAdr -ScriptBlock {
       $fldrs='Downloads;Pictures;Desktop;Videos;Documents;Music;AppData\Local\Temp;AppData\Local\Microsoft\Windows\INetCache;AppData\Local\Google\Chrome\User Data\Default\Cache;AppData\Local\Microsoft\Outlook' -split ';'       
-      $(Get-ChildItem -Path "C:\Users" | ?{$_.Mode -like "d????*"}) 2>$null | %{
+      $(Get-ChildItem -Path "C:\Users" | Where {$_.Mode -like "d????*"}) 2>$null | ForEach {
         $usrDir=$_.Name
-        $tmp= $fldrs | %{
-          $a=[int](($(Get-ChildItem -Path "C:\Users\$usrDir\$_" -Recurse -Force | %{$_.Length}) 2>$null  | Measure-Object  -Sum).Sum / 1MB)
+        $tmp= $fldrs | ForEach {
+          $a=[int](($(Get-ChildItem -Path "C:\Users\$usrDir\$_" -Recurse -Force | ForEach {$_.Length}) 2>$null  | Measure-Object  -Sum).Sum / 1MB)
           if($a -gt 100){@{usrDir=$usrDir;Dir=$_;Size=$a}}
         }
         if($tmp){$tmp}
       }
     }
-    $(Invoke-Command -ComputerName $compAdr -ScriptBlock $ScriptBlock -ErrorVariable err) 2>$null
   }
-
 }
 
 function GetSizeSys {
     $global:jobCnt=0
     if($CheckBox2.Checked -and (Test-Path "\\$compAdr\c$\Users")){
       $Script={
-        $tmp=""; $a=$(($(Get-ChildItem -Path "$input" -Recurse -force | %{$_.Length}) 2>$null | Measure-Object  -Sum).Sum / 1MB)
+        $tmp=""; $a=$(($(Get-ChildItem -Path "$input" -Recurse -force | ForEach {$_.Length}) 2>$null | Measure-Object  -Sum).Sum / 1MB)
         $("`nC:\Windows\Temp ").PadRight(22," ")+$("{0:n0}" -f $a+" MB`n").PadLeft(9," ")
       }
       Start-Job -InputObject "\\$compAdr\c$\Windows\Temp" -ScriptBlock $Script -Name 'System files'
 
       $Script={
-        $tmp=""; $a=$(($(Get-ChildItem -Path "$input" -Recurse -force | %{$_.Length}) 2>$null | Measure-Object  -Sum).Sum / 1MB)
+        $tmp=""; $a=$(($(Get-ChildItem -Path "$input" -Recurse -force | ForEach {$_.Length}) 2>$null | Measure-Object  -Sum).Sum / 1MB)
         if($a -ge 1GB){$("`nC:\ProgramData\Microsoft\Diagnosis").PadRight(36," ")+$("{0:n0}" -f $a+" MB`n").PadLeft(9," ")}
       }
       Start-Job -InputObject "\\$compAdr\c$\ProgramData\Microsoft\Diagnosis" -ScriptBlock $Script -Name 'System files'
 
       $Script={
-        $tmp=""; $a=$(Get-ChildItem -Path "$input" -Force | ?{$_.Name -eq 'hiberfil.sys'}).Length / 1MB 2>$null 
+        $tmp=""; $a=$(Get-ChildItem -Path "$input" -Force | Where {$_.Name -eq 'hiberfil.sys'}).Length / 1MB 2>$null 
         if($a -ge 1){$("`nC:\hiberfil.sys").PadRight(22," ")+$("{0:n0}" -f $a+" MB`n").PadLeft(9," ")}
       }
       Start-Job -InputObject "\\$compAdr\c$" -ScriptBlock $Script -Name 'System files'
 
       $Script={
-        $tmp=""; $a=$(Get-ChildItem -Path "$input" -Force | ?{$_.Name -eq 'pagefile.sys'}).Length / 1MB 2>$null 
+        $tmp=""; $a=$(Get-ChildItem -Path "$input" -Force | Where {$_.Name -eq 'pagefile.sys'}).Length / 1MB 2>$null 
         $("`nC:\pagefile.sys").PadRight(22," ")+$("{0:n0}" -f $a+" MB`n").PadLeft(9," ")
       }
       Start-Job -InputObject "\\$compAdr\c$" -ScriptBlock $Script -Name 'System files'
 
       $Script={
-        $tmp=""; $a=$(($(Get-ChildItem -Path "$input" -Recurse -force | %{$_.Length}) 2>$null | Measure-Object  -Sum).Sum / 1MB)
+        $tmp=""; $a=$(($(Get-ChildItem -Path "$input" -Recurse -force | ForEach {$_.Length}) 2>$null | Measure-Object  -Sum).Sum / 1MB)
         $("`nC:\`$Recycle.Bin ").PadRight(22," ")+$("{0:n0}" -f $a+" MB`n").PadLeft(9," ")
       }
       Start-Job -InputObject "\\$compAdr\c$\`$Recycle.Bin" -ScriptBlock $Script -Name 'System files'
@@ -550,7 +542,7 @@ function GetPrintersInvoke {
   Start-Job -InputObject "$compAdr" -Name 'Get Printers Invoke' -ScriptBlock { 
     Invoke-Command -ComputerName "$input" -ScriptBlock {
 
-    function GetIP ($cmp){return $([System.Net.Dns]::GetHostAddresses("$cmp") | where {$_.AddressFamily -eq "InterNetwork"} | %{[string]$_}) 2>$nul}
+    function GetIP ($cmp){return $([System.Net.Dns]::GetHostAddresses("$cmp") | where {$_.AddressFamily -eq "InterNetwork"} | ForEach {[string]$_}) 2>$nul}
 
     $pth= 'SYSTEM\ControlSet001\Control\Print\Monitors'
     $key1="Ports","$pth\Standard TCP/IP Port\Ports","HostName"
@@ -563,7 +555,7 @@ function GetPrintersInvoke {
     $gtReg= {(Get-ChildItem -Path "HKLM:\$pth\$pth2").PSChildName 2>$null}
     $key1,$key2,$key3,$key4,$key5 | foreach {
       $class=$_[0]; $pth=$_[1]; $vl=$_[2];$pth2=''
-      .$gtReg | ?{$_} | ?{$_ -notlike "*:OneNote*"} | %{
+      .$gtReg | Where {$_} | Where {$_ -notlike "*:OneNote*"} | ForEach {
         $prt=$_;$pth2="$prt\"; $prtIP= get-ItemPropertyValue "HKLM:\$pth\$pth2" $vl
         $ip=''; if($prtIP -notmatch '^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$'){ $ip= GetIP $prtIP}
         @{Class=$class; Name=$prt;Value=$prtIP; IP=$ip}
@@ -571,7 +563,7 @@ function GetPrintersInvoke {
     }
 
     $pth=$key6[1];$class=$key6[0];$vl=$key6[2];$pth2='' 
-    .$gtReg | ?{$_ -notlike "*:OneNote*"} | ?{$_}| %{$name=$_;$pth2="$_\$vl"; $prnr= .$gtReg; if($prnr -or $name){@{Class=$class; Name=$name; Value=$prnr}}}
+    .$gtReg | Where {$_ -notlike "*:OneNote*"} | Where {$_}| ForEach {$name=$_;$pth2="$_\$vl"; $prnr= .$gtReg; if($prnr -or $name){@{Class=$class; Name=$name; Value=$prnr}}}
     }
   }
 }
@@ -612,7 +604,7 @@ function  PrintTabl ($printTabl){
             if($Port.Name -like "WSD-*"){
                 $a=''; $reg= 'LocalMachine',"SYSTEM\CurrentControlSet\Enum\SWD\DAFWSDProvider\uuid:$($Port.Name)",'LocationInformation'
                 $reg2= 'LocalMachine',"SYSTEM\CurrentControlSet\Enum\SWD\DAFWSDProvider\urn:uuid:$($Port.Name)",'LocationInformation'
-                $reg, $reg2 | %{if(-not $a){$a= $([Microsoft.Win32.RegistryKey]::OpenRemoteBaseKey($_[0], $compName).OpenSubKey($_[1], $true).GetValue($_[2])) 2>$null}}
+                $reg, $reg2 | ForEach {if(-not $a){$a= $([Microsoft.Win32.RegistryKey]::OpenRemoteBaseKey($_[0], $compName).OpenSubKey($_[1], $true).GetValue($_[2])) 2>$null}}
                 if($a){$prPort="WSD:"+($a -replace 'http://' -split ':')[0]; if($a -like "*``[*::*]*"){$prPort="WSD:"+($a -replace 'http://\[' -split ']:')[0]}}else{$prPort=$Port.Name}
             }
             "$prName;$prPort;$($Port.IP)"
@@ -651,7 +643,7 @@ function PrintersOut ($printersOut){
 
 function PrintOut ($dev){
   $list=@(); $ListBox3.text="`r`n"
-  $cl=@(); $($dev.Class | %{ if($_ -notin $cl){$cl+=$_; $_}}) | %{ 
+  $cl=@(); $($dev.Class | ForEach { if($_ -notin $cl){$cl+=$_; $_}}) | ForEach { 
     $Class=$_
     $dev | Where {$_.Class -eq $Class} | Where {Hide $_.FriendlyName} | Sort-Object {$_.FriendlyName} | ForEach-Object{
       $Id=""; if( (exclude $_.InstanceId) ){$Id= $_.InstanceId}
@@ -661,14 +653,14 @@ function PrintOut ($dev){
 
   If (-not($global:list)){$global:list=$list}
 
-  $list.Class | Get-Unique | %{ 
+  $list.Class | Get-Unique | ForEach { 
     $Class=$_; $out=@();$outOff=@(); $dev=@()
     txt "$Class`r`n$sprtr`r`n"
-    $dev= ($list | ?{$_.Class -eq $Class}).dev
-    ($global:list | ?{$_.Class -eq $Class}).dev | %{if ($_ -in $dev){$Out+=$_}else{$outOff+=$_}}
-    $out | %{$a=$_ -split ";"; Output $a[0] "blue"; Output $a[1] "green"} 
-    $dev | ?{ $_ -notin $Out} | %{$a=$_ -split ";"; Output $a[0] "blue" $fontBold ; Output $a[1] "green" $font}
-    $outOff | %{$a=$_ -split ";"; Output $a[0] "red"; Output $a[1] "green"}
+    $dev= ($list | Where {$_.Class -eq $Class}).dev
+    ($global:list | Where {$_.Class -eq $Class}).dev | ForEach {if ($_ -in $dev){$Out+=$_}else{$outOff+=$_}}
+    $out | ForEach {$a=$_ -split ";"; Output $a[0] "blue"; Output $a[1] "green"} 
+    $dev | Where { $_ -notin $Out} | ForEach {$a=$_ -split ";"; Output $a[0] "blue" $fontBold ; Output $a[1] "green" $font}
+    $outOff | ForEach {$a=$_ -split ";"; Output $a[0] "red"; Output $a[1] "green"}
   txt "`r`n"
   }
 
@@ -680,54 +672,54 @@ $global:list=$list
 
 function ClrRecycle {
 
-$code='$comp="'+"$compAdr"+'"
-$ScriptBlock= {
-  $dir= "$Input"
-  $mnth=2
-  cls; $expr= (Get-Date).AddMonths(-$mnth);
-  Write-Host "`n`n Script run on $env:COMPUTERNAME"
-  Write-Host "`n`n Clean directory by delete files older than $mnth month `n`n Folder - $dir  Scan.."  -n
-  $($a= Get-ChildItem -Path $dir -Recurse -Force | ?{$_.Mode -like "-????*"} | select Length,LastWriteTime,FullName) 2>$null 
-  Write-Host ".." -n
-  $all= [int]$((($a | ?{$_.Length} | %{$_.Length}) | Measure-Object  -Sum).Sum / 1MB)
-  $del= $a | ?{$_.LastWriteTime -le $expr}
-  $old= [int]$((( $del | %{$_.Length}) | Measure-Object  -Sum).Sum / 1MB)
-  $prcnt="{0:P0}" -f ($old/(1+$all))
+  $code='$comp="'+"$compAdr"+'"
+    $ScriptBlock= {
+      $dir= "$Input"
+      $mnth=2
+      cls; $expr= (Get-Date).AddMonths(-$mnth);
+      Write-Host "`n`n Script run on $env:COMPUTERNAME"
+      Write-Host "`n`n Clean directory by delete files older than $mnth month `n`n Folder - $dir  Scan.."  -n
+      $($a= Get-ChildItem -Path $dir -Recurse -Force | Where {$_.Mode -like "-????*"} | select Length,LastWriteTime,FullName) 2>$null 
+      Write-Host ".." -n
+      $all= [int]$((($a | Where {$_.Length} | ForEach {$_.Length}) | Measure-Object  -Sum).Sum / 1MB)
+      $del= $a | Where {$_.LastWriteTime -le $expr}
+      $old= [int]$((( $del | ForEach {$_.Length}) | Measure-Object  -Sum).Sum / 1MB)
+      $prcnt="{0:P0}" -f ($old/(1+$all))
+    
+      Write-Host ". Done `n`n Folder $dir, size - $all MB"
+      Write-Host "`r Files to delete - $((" {0:n0}" -f $old+" MB").PadLeft(9," ")), $($del.Count) files ($prcnt)"
+      Write-Host "`n`n`n Delete files..." -n
+    
+      $time= Measure-Command {$($del | ForEach { Remove-Item $_.FullName -Force}) 2>$null} 
+    
+      Write-Host ".. Done in $([int]$time.TotalSeconds) seconds  "
+    
+      Write-Host "`n`n Delete empty folders..." -n
+      $GetDir={$(Get-ChildItem -Path $dir -Force | Where {$_.Mode -like "d????*"}).FullName 2>$null}
+      function ChkFldr ($dir){if($(Get-ChildItem -Path $dir -File -Recurse -Force) 2>$null){$true; return};$false}
+      function DelFldr ($dir){if(ChkFldr $dir){.$GetDir | Where {$_} | ForEach {DelFldr $_}}else{$(Remove-Item $_ -Force -Recurse) 2>$null}}
+      .$GetDir | ForEach {DelFldr $_}
+      Write-Host ".. Done" 
+    
+      $all= [int]$((($(Get-ChildItem -Path $dir -File -Recurse -Force) 2>$null | Where {$_.Length} | ForEach {$_.Length}) | Measure-Object  -Sum).Sum / 1MB)
+      Write-Host "`n`n Folder $dir, size - $all MB`n"
+      return "OK"
+   }
 
-  Write-Host ". Done `n`n Folder $dir, size - $all MB"
-  Write-Host "`r Files to delete - $((" {0:n0}" -f $old+" MB").PadLeft(9," ")), $($del.Count) files ($prcnt)"
-  Write-Host "`n`n`n Delete files..." -n
+   $dir= "C:\`$Recycle.Bin"
+   $out=$(Invoke-Command -ComputerName $comp -ScriptBlock $ScriptBlock -InputObject $dir) 2>$null
+   if($out -ne "OK"){
+   $err=$null
+   $dir= "\\$comp\C$\`$Recycle.Bin"
+   $err; timeout 3 >$null
+   $(Invoke-Command -ScriptBlock $ScriptBlock -InputObject $dir -ErrorVariable err) 2>$null
 
-  $time= Measure-Command {$($del | %{ Remove-Item $_.FullName -Force}) 2>$null} 
+  }
+  Write-Host "`n   -= Press any key =- `n`n"
+  timeout 300 >$null
+  ' 
 
-  Write-Host ".. Done in $([int]$time.TotalSeconds) seconds  "
-
-  Write-Host "`n`n Delete empty folders..." -n
-  $GetDir={$(Get-ChildItem -Path $dir -Force | ?{$_.Mode -like "d????*"}).FullName 2>$null}
-  function ChkFldr ($dir){if($(Get-ChildItem -Path $dir -File -Recurse -Force) 2>$null){$true; return};$false}
-  function DelFldr ($dir){if(ChkFldr $dir){.$GetDir | ?{$_} | %{DelFldr $_}}else{$(Remove-Item $_ -Force -Recurse) 2>$null}}
-  .$GetDir | %{DelFldr $_}
-  Write-Host ".. Done" 
-
-  $all= [int]$((($(Get-ChildItem -Path $dir -File -Recurse -Force) 2>$null | ?{$_.Length} | %{$_.Length}) | Measure-Object  -Sum).Sum / 1MB)
-  Write-Host "`n`n Folder $dir, size - $all MB`n"
-  return "OK"
-}
-
-$dir= "C:\`$Recycle.Bin"
-$out=$(Invoke-Command -ComputerName $comp -ScriptBlock $ScriptBlock -InputObject $dir) 2>$null
-if($out -ne "OK"){
-  $err=$null
-  $dir= "\\$comp\C$\`$Recycle.Bin"
-  $err; timeout 3 >$null
-  $(Invoke-Command -ScriptBlock $ScriptBlock -InputObject $dir -ErrorVariable err) 2>$null
-
-}
-Write-Host "`n   -= Pess any key =- `n`n"
-timeout 300 >$null
-' 
-
-Start-Process cmd -ArgumentList " /C powershell.exe  -EncodedCommand $([Convert]::ToBase64String([System.Text.Encoding]::Unicode.GetBytes($code)))"
+  Start-Process cmd -ArgumentList " /C powershell.exe  -EncodedCommand $([Convert]::ToBase64String([System.Text.Encoding]::Unicode.GetBytes($code)))"
 
 }
 
@@ -736,8 +728,8 @@ Start-Process cmd -ArgumentList " /C powershell.exe  -EncodedCommand $([Convert]
 function GetDev ($comp){
   $class="Win32_OperatingSystem","Win32_VideoController","Win32_DesktopMonitor","Win32_DiskDrive","Win32_Share","Win32_IDEController","Win32_SoundDevice","Win32_Processor","Win32_USBController","Win32_USBControllerDevice","Win32_USBHub","Win32_Printer","Win32_NetworkAdapter"
   $dev=@();txt "`r`n`r`n`r`n"
-  $class | %{ 
-    $clss=$_ -replace "Win32_",""; Get-WmiObject -Class $_ -ComputerName $comp | ?{$_.PhysicalAdapter -or $_.SpoolEnabled -or $_.Status -eq "OK"} | Select Name, PNPDeviceID, Model, Path, Size |%{
+  $class | ForEach { 
+    $clss=$_ -replace "Win32_",""; Get-WmiObject -Class $_ -ComputerName $comp | Where {$_.PhysicalAdapter -or $_.SpoolEnabled -or $_.Status -eq "OK"} | Select Name, PNPDeviceID, Model, Path, Size |ForEach {
     if($clss -like "USB*"){$clss="USB"}
     if($clss -eq "Share"){$_.PNPDeviceID= $_.Path}
     if($clss -eq "OperatingSystem"){$_.name=($_.name -split"\|")[0]}
@@ -748,7 +740,7 @@ function GetDev ($comp){
     if($clss -eq "Processor"){ @{FriendlyName=(Get-WmiObject -Class CIM_ComputerSystem -ComputerName $comp).model; InstanceId=""; Class="Manufacturer"}}
     }
   }
-  Get-WmiObject  -Class Win32_PnPEntity -ComputerName $comp | Select Name, PNPDeviceID, Manufacturer | %{
+  Get-WmiObject  -Class Win32_PnPEntity -ComputerName $comp | Select Name, PNPDeviceID, Manufacturer | ForEach {
     if($_.name -like "*(COM*"){@{FriendlyName=$_.Name; InstanceId=$_.PNPDeviceID; Class="Com Ports"}}
     if($_.Manufacturer -eq $nul -and $_.PNPDeviceID -notlike "ROOT\LEGACY*"){@{FriendlyName=$_.Name; InstanceId=$_.PNPDeviceID; Class="Unknow Devices"}}
   }
@@ -874,7 +866,7 @@ $Form.Controls.Add($CheckBox4)
 
 function ShCRButton ($in){
   if($global:CRButton){$global:CRButton.Dispose()}; $global:CRButton=$null
-  $sz= (($in | Select-String 'Recycle.Bin' -SimpleMatch) -split '' | ?{$_ -match '\d'}) -join ''
+  $sz= (($in | Select-String 'Recycle.Bin' -SimpleMatch) -split '' | Where {$_ -match '\d'}) -join ''
   if(500 -le $sz){
     $CRButton = New-Object System.Windows.Forms.Button
     $CRButton.Location = New-Object System.Drawing.Point(550,3)
