@@ -558,7 +558,7 @@ function GetPrintersInvoke {
     $key1,$key2,$key3,$key4,$key5 | foreach {
       $class=$_[0]; $pth=$_[1]; $vl=$_[2];$pth2=''
       .$gtReg | Where {$_} | Where {$_ -notlike "*:OneNote*"} | ForEach {
-        $prt=$_;$pth2="$prt\"; $prtIP= get-ItemPropertyValue "HKLM:\$pth\$pth2" $vl
+        $prt=$_;$pth2="$prt\"; $prtIP=''; $prtIP=(get-ItemProperty "HKLM:\$pth\$pth2").$vl 
         $ip=''; if($prtIP -notmatch '^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$'){ $ip= GetIP $prtIP}
         @{Class=$class; Name=$prt;Value=$prtIP; IP=$ip}
       }
