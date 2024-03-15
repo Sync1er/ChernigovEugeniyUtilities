@@ -118,7 +118,7 @@ $timer.add_tick({
       $sum=[int](($sum | Measure-Object  -Sum).Sum /1024)
       Output "`n`n  All summary - $sum GB"
     }
-    Output "`n`n -= Done =-`n`n"; $global:step=$false; $timer.Stop()
+    Output "`n`n -= Done =-`n`n"; $global:step=$false; if($global:wrm -eq 'Stopped'){Get-Service -Name WinRM -ComputerName $compAdr |  Stop-service}; $global:wrm=$null; $timer.Stop()
   }
 
   if($step -eq 5){    
@@ -283,6 +283,10 @@ function Chek {
   if(-not $png){3389,5900,445,22,80,8080,1112,2575,10050 | ForEach {  if(ChkPrt $compAdr 3389){$png=$true;Output "Port $_ open`r`n" "green"}}}
 
   if(-not $png){Output "`r`nComputer $compAdr unaccessible.."; return}
+  if($global:compAdr -ne $env:COMPUTERNAME){
+    $global:wrm=(Get-Service -Name WinRM -ComputerName $compAdr).Status
+    if($global:wrm -eq 'Stopped'){Get-Service -Name WinRM -ComputerName $compAdr |  Start-service}
+  }
   if($CheckBox4.Checked){GetUsers}
   PrProgres
   GetSizeInvoke
