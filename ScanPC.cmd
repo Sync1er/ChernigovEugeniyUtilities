@@ -1,6 +1,9 @@
 start "ScanPC" /D "%~dp0" powershell.exe "$comp="""%1"""; $a= Get-Content '.\%~nx0' -Encoding Oem | Select-Object -Skip 3; Invoke-Expression ($a -join """`r`n""")" 
 EXIT /B
 
+
+# Fixed exclude symbolic link from scan C:\$Recycle.Bin (ReparsePoint)
+
 #    https://github.com/Sync1er/ChernigovEugeniyUtilities
 #    https://habr.com/ru/users/Sync1er/
 #    Chernigov Eugeniy 2024. For non commercial use only
@@ -15,7 +18,8 @@ public static extern bool ShowWindow(IntPtr hWnd, Int32 nCmdShow);
 '
 [Console.Window]::ShowWindow(( $consolePtr = [Console.Window]::GetConsoleWindow()), 0)
 
-Function Prompt {"::"}
+Function Prompt {$host.ui.RawUI.WindowTitle = $(get-location); "::"}
+
 
 if(-not $comp){$comp=$env:COMPUTERNAME}
 $jobCount=4
@@ -64,10 +68,14 @@ CR button to show if size of C:\`$Recycle.Bin is more than 500MB
 
 
 
+
+   Author will not liable for any loss or claim
+
    https://github.com/Sync1er/ChernigovEugeniyUtilities
    https://habr.com/ru/users/Sync1er/
    Chernigov Eugeniy 2024. For non commercial use only
 
+   17.03.2024
 
 "
 
@@ -105,6 +113,9 @@ function OutputSize ($usrSz){
   }
 }
 
+function Stop { Get-Job | Remove-Job -Force; ScanButton {Chek} 'Scan';  if($global:wrm -eq 'Stopped'){Get-Service -Name WinRM -ComputerName $compAdr |  Stop-service}; $global:wrm=$null}
+
+
 $step=0
 $tmrTick=10
 if($timer){$timer.Dispose()}
@@ -118,7 +129,7 @@ $timer.add_tick({
       $sum=[int](($sum | Measure-Object  -Sum).Sum /1024)
       Output "`n`n  All summary - $sum GB"
     }
-    Output "`n`n -= Done =-`n`n"; $global:step=$false; if($global:wrm -eq 'Stopped'){Get-Service -Name WinRM -ComputerName $compAdr |  Stop-service}; $global:wrm=$null; $timer.Stop()
+    Output "`n`n -= Done =-`n`n"; $global:step=$false; ScanButton {Chek} 'Scan'; if($global:wrm -eq 'Stopped'){Get-Service -Name WinRM -ComputerName $compAdr |  Stop-service}; $global:wrm=$null; $timer.Stop()
   }
 
   if($step -eq 5){    
@@ -270,7 +281,8 @@ function Shrt($adUsr){ $adUsrSh=$adUsr; $a=($adUsr.trim() -split ' '); if($a[1] 
 function Chek {
   Get-Job | Remove-Job -Force
   if($global:CRButton){$global:CRButton.Dispose()}; $global:CRButton=$null
-
+  ScanButton {Stop} 'Stop'
+  $ListBox2.Select(0,0)
   $global:sum=@()
   $global:os=$null
   $global:compAdr= ($ListBox2.Text).trim()
@@ -280,7 +292,7 @@ function Chek {
   $ip= GetIP $compAdr
   $cnt=2; while($cnt) {$cnt--; $a= $(.$ping); Output "$a`r`n" $(if($a -like '*TTL=*'){"green"; $png=$true}else{"red"})}
   if(-not $ip){Output "`r`nComputer $compAdr unaccessible.."; return}
-  if(-not $png){3389,5900,445,22,80,8080,1112,2575,10050 | ForEach {  if(ChkPrt $compAdr 3389){$png=$true;Output "Port $_ open`r`n" "green"}}}
+  if(-not $png){445,3389,5900,22,80,8080 | ForEach {  if(ChkPrt $compAdr $_ ){$png=$true;Output "Port $_ open`r`n" "green"}}}
 
   if(-not $png){Output "`r`nComputer $compAdr unaccessible.."; return}
   if($global:compAdr -ne $env:COMPUTERNAME){
@@ -448,22 +460,26 @@ function GetSizeInvoke {
         if($a -ge 1){$("`n$fl").PadRight(22," ")+$("{0:n0}" -f $a+" MB`n").PadLeft(9," ")}
       }
     }
-    $(Invoke-Command -ComputerName $compAdr -ScriptBlock $ScriptBlock -ErrorVariable err) 2>$null
+    if($env:COMPUTERNAME -eq $compAdr){.$ScriptBlock}
+    else{$(Invoke-Command -ComputerName $compAdr -ScriptBlock $ScriptBlock -ErrorVariable err) 2>$null}
   }
 
   Start-Job -InputObject "$compAdr" -Name 'Users files Invoke' -ScriptBlock {
     $compAdr="$input"
-    Invoke-Command -ComputerName $compAdr -ScriptBlock {
+    $ScriptBlock= {
       $fldrs='Downloads;Pictures;Desktop;Videos;Documents;Music;AppData\Local\Temp;AppData\Local\Microsoft\Windows\INetCache;AppData\Local\Google\Chrome\User Data\Default\Cache;AppData\Local\Microsoft\Outlook' -split ';'       
       $(Get-ChildItem -Path "C:\Users" | Where {$_.Mode -like "d????*"}) 2>$null | ForEach {
         $usrDir=$_.Name
         $tmp= $fldrs | ForEach {
           $a=[int](($(Get-ChildItem -Path "C:\Users\$usrDir\$_" -Recurse -Force | ForEach {$_.Length}) 2>$null  | Measure-Object  -Sum).Sum / 1MB)
-          if($a -gt 100){@{usrDir=$usrDir;Dir=$_;Size=$a}}
+          $trhld=100; if($_ -like "*Cache*"){$trhld= 500}
+          if($a -gt $trhld){@{usrDir=$usrDir;Dir=$_;Size=$a}}
         }
         if($tmp){$tmp}
       }
     }
+    if($env:COMPUTERNAME -eq $compAdr){.$ScriptBlock}
+    else{$(Invoke-Command -ComputerName $compAdr -ScriptBlock $ScriptBlock -ErrorVariable err) 2>$null}
   }
 }
 
@@ -679,35 +695,43 @@ $global:list=$list
 function ClrRecycle {
 
   $code='$comp="'+"$compAdr"+'"
+
     $ScriptBlock= {
-      $dir= "$Input"
+
+      if(-not$dir){$dir= "$Input"}
+
+      $GetDir={$(Get-ChildItem -Path $dir -Force | Where-Object {$_.Attributes -like "*Directory*" -and $_.Attributes -notlike "*ReparsePoint*"}) | ForEach-Object {$_.FullName}}
+      function  GetFile ($dir){
+        Get-ChildItem -Path $dir -Force | Where-Object {$_.Attributes -notlike "*Directory*" -and $_.Attributes -notlike "*ReparsePoint*"} | select Length,LastWriteTime,FullName
+        .$GetDir | ForEach-Object {GetFile $_}
+      }
+
       $mnth=2
       cls; $expr= (Get-Date).AddMonths(-$mnth);
       Write-Host "`n`n Script run on $env:COMPUTERNAME"
       Write-Host "`n`n Clean directory by delete files older than $mnth month `n`n Folder - $dir  Scan.."  -n
-      $($a= Get-ChildItem -Path $dir -Recurse -Force | Where {$_.Mode -like "-????*"} | select Length,LastWriteTime,FullName) 2>$null 
-      Write-Host ".." -n
-      $all= [int]$((($a | Where {$_.Length} | ForEach {$_.Length}) | Measure-Object  -Sum).Sum / 1MB)
+
+      $a= $(GetFile $dir) 2>$null; Write-Host ".." -n
+      $all= [int]$((($a | Where-Object {$_.Length} | ForEach-Object {$_.Length}) | Measure-Object  -Sum).Sum / 1MB)
       $del= $a | Where {$_.LastWriteTime -le $expr}
-      $old= [int]$((( $del | ForEach {$_.Length}) | Measure-Object  -Sum).Sum / 1MB)
+      $old= [int]$((( $del | ForEach-Object {$_.Length}) | Measure-Object  -Sum).Sum / 1MB)
       $prcnt="{0:P0}" -f ($old/(1+$all))
     
       Write-Host ". Done `n`n Folder $dir, size - $all MB"
       Write-Host "`r Files to delete - $((" {0:n0}" -f $old+" MB").PadLeft(9," ")), $($del.Count) files ($prcnt)"
       Write-Host "`n`n`n Delete files..." -n
     
-      $time= Measure-Command {$($del | ForEach { Remove-Item $_.FullName -Force}) 2>$null} 
+      $time= Measure-Command {$($del | ForEach-Object { Remove-Item $_.FullName -Force}) 2>$null} 
     
       Write-Host ".. Done in $([int]$time.TotalSeconds) seconds  "
     
       Write-Host "`n`n Delete empty folders..." -n
-      $GetDir={$(Get-ChildItem -Path $dir -Force | Where {$_.Mode -like "d????*"}).FullName 2>$null}
-      function ChkFldr ($dir){if($(Get-ChildItem -Path $dir -File -Recurse -Force) 2>$null){$true; return};$false}
-      function DelFldr ($dir){if(ChkFldr $dir){.$GetDir | Where {$_} | ForEach {DelFldr $_}}else{$(Remove-Item $_ -Force -Recurse) 2>$null}}
-      .$GetDir | ForEach {DelFldr $_}
+      function ChkFldr ($dir){if($(Get-ChildItem -Path $dir  -Recurse -Force | Where {$_.Mode -like "-????*"}) 2>$null){$true; return};$false}
+      function DelFldr ($dir){if(ChkFldr $dir){.$GetDir | ForEach-Object {DelFldr $_}}else{$(Remove-Item $_ -Force -Recurse) 2>$null}}
+      .$GetDir | ForEach-Object {DelFldr $_}
       Write-Host ".. Done" 
     
-      $all= [int]$((($(Get-ChildItem -Path $dir -File -Recurse -Force) 2>$null | Where {$_.Length} | ForEach {$_.Length}) | Measure-Object  -Sum).Sum / 1MB)
+      $all= [int]$((($(Get-ChildItem -Path $dir -File -Recurse -Force) 2>$null | Where {$_.Length} | ForEach-Object {$_.Length}) | Measure-Object  -Sum).Sum / 1MB)
       Write-Host "`n`n Folder $dir, size - $all MB`n"
       return "OK"
    }
@@ -718,7 +742,7 @@ function ClrRecycle {
    $err=$null
    $dir= "\\$comp\C$\`$Recycle.Bin"
    $err; timeout 3 >$null
-   $(Invoke-Command -ScriptBlock $ScriptBlock -InputObject $dir -ErrorVariable err) 2>$null
+   $(.$ScriptBlock) 2>$null
 
   }
   Write-Host "`n   -= Press any key =- `n`n"
@@ -836,12 +860,19 @@ $DeviceButton.Text = 'Devices'
 $DeviceButton.Add_Click({Device})
 $form.Controls.Add($DeviceButton)
 
-$ScanButton = New-Object System.Windows.Forms.Button
-$ScanButton.Location = New-Object System.Drawing.Point(280,4)
-$ScanButton.Size = New-Object System.Drawing.Size(60,20)
-$ScanButton.Text = 'Scan'
-$ScanButton.Add_Click({Chek})
-$form.Controls.Add($ScanButton)
+function ScanButton ($clk,$txt) {
+  $Button = New-Object System.Windows.Forms.Button
+  $Button.Location = New-Object System.Drawing.Point(280,4)
+  $Button.Size = New-Object System.Drawing.Size(60,20)
+  $Button.Text = $txt
+  $Button.Add_Click($clk)
+  if($ScanButton){$global:ScanButton.Dispose(); $global:ScanButton= $null}
+  $global:ScanButton=$Button
+  $global:form.Controls.Add($global:ScanButton)
+}
+
+ScanButton {Chek} 'Scan'
+
 
 $CheckBox1 = New-Object System.Windows.Forms.CheckBox
 $CheckBox1.Location = New-Object System.Drawing.Size(345,5)
@@ -854,7 +885,6 @@ $CheckBox2.Location = New-Object System.Drawing.Size(400,5)
 $CheckBox2.Size = New-Object System.Drawing.Size(45,16)
 $CheckBox2.Text = "Size"
 $Form.Controls.Add($CheckBox2)
-
 
 $CheckBox3 = New-Object System.Windows.Forms.CheckBox
 $CheckBox3.Location = New-Object System.Drawing.Size(450,5)
