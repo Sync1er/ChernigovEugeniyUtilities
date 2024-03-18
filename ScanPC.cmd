@@ -65,11 +65,11 @@ CR button to show if size of C:\`$Recycle.Bin is more than 500MB
 
 
 
+Don't forget to run as administrator for scanning local computer
 
 
 
-
-   Author will not liable for any loss or claim
+   Author is not liable for any loss or claim
 
    https://github.com/Sync1er/ChernigovEugeniyUtilities
    https://habr.com/ru/users/Sync1er/
@@ -697,43 +697,50 @@ function ClrRecycle {
   $code='$comp="'+"$compAdr"+'"
 
     $ScriptBlock= {
-
+      function txt ($txt){ Write-Host $txt -n}
       if(-not$dir){$dir= "$Input"}
 
-      $GetDir={$(Get-ChildItem -Path $dir -Force | Where-Object {$_.Attributes -like "*Directory*" -and $_.Attributes -notlike "*ReparsePoint*"}) | ForEach-Object {$_.FullName}}
+      $GetDir={$(ls -Path $dir -Force | Where {$_.Attributes -like "*Directory*" -and $_.Attributes -notlike "*ReparsePoint*"}) | ForEach {$_.FullName}}
       function  GetFile ($dir){
-        Get-ChildItem -Path $dir -Force | Where-Object {$_.Attributes -notlike "*Directory*" -and $_.Attributes -notlike "*ReparsePoint*"} | select Length,LastWriteTime,FullName
-        .$GetDir | ForEach-Object {GetFile $_}
+        ls -Path $dir -Force | Where {$_.Attributes -notlike "*Directory*" -and $_.Attributes -notlike "*ReparsePoint*"} | select Length,LastWriteTime,FullName
+        .$GetDir | ForEach {GetFile $_}
       }
+      cls; $mnth=2; $expr= (Get-Date).AddMonths(-$mnth);
+      txt "`n`n Script run on $env:COMPUTERNAME`n"
+      txt "`n`n Clean directory by delete files older than $mnth month `n`n Folder - $dir  Scan.."
 
-      $mnth=2
-      cls; $expr= (Get-Date).AddMonths(-$mnth);
-      Write-Host "`n`n Script run on $env:COMPUTERNAME"
-      Write-Host "`n`n Clean directory by delete files older than $mnth month `n`n Folder - $dir  Scan.."  -n
-
-      $a= $(GetFile $dir) 2>$null; Write-Host ".." -n
-      $all= [int]$((($a | Where-Object {$_.Length} | ForEach-Object {$_.Length}) | Measure-Object  -Sum).Sum / 1MB)
-      $del= $a | Where {$_.LastWriteTime -le $expr}
-      $old= [int]$((( $del | ForEach-Object {$_.Length}) | Measure-Object  -Sum).Sum / 1MB)
+      $fl= $(GetFile $dir) 2>$null; txt ".."
+      if(-not $fl.count){return $false}
+      $all= [int]$((($fl | Where {$_.Length} | ForEach {$_.Length}) | Measure-Object  -Sum).Sum / 1MB)
+      $del= $fl | Where {$_.LastWriteTime -le $expr}
+      $old= [int]$((( $del | ForEach {$_.Length}) | Measure-Object  -Sum).Sum / 1MB)
       $prcnt="{0:P0}" -f ($old/(1+$all))
     
-      Write-Host ". Done `n`n Folder $dir, size - $all MB"
-      Write-Host "`r Files to delete - $((" {0:n0}" -f $old+" MB").PadLeft(9," ")), $($del.Count) files ($prcnt)"
-      Write-Host "`n`n`n Delete files..." -n
-    
-      $time= Measure-Command {$($del | ForEach-Object { Remove-Item $_.FullName -Force}) 2>$null} 
-    
-      Write-Host ".. Done in $([int]$time.TotalSeconds) seconds  "
-    
-      Write-Host "`n`n Delete empty folders..." -n
-      function ChkFldr ($dir){if($(Get-ChildItem -Path $dir  -Recurse -Force | Where {$_.Mode -like "-????*"}) 2>$null){$true; return};$false}
-      function DelFldr ($dir){if(ChkFldr $dir){.$GetDir | ForEach-Object {DelFldr $_}}else{$(Remove-Item $_ -Force -Recurse) 2>$null}}
-      .$GetDir | ForEach-Object {DelFldr $_}
-      Write-Host ".. Done" 
-    
-      $all= [int]$((($(Get-ChildItem -Path $dir -File -Recurse -Force) 2>$null | Where {$_.Length} | ForEach-Object {$_.Length}) | Measure-Object  -Sum).Sum / 1MB)
-      Write-Host "`n`n Folder $dir, size - $all MB`n"
-      return "OK"
+      txt ". Done `n`n Folder $dir, size - $all MB`n"
+      txt "`r Files to delete - $((" {0:n0}" -f $old+" MB").PadLeft(9," ")), $($del.Count) files ($prcnt)`n"
+       if($old){$txt    = "`nClean $dir folder?  n"
+         $ask= "`nAre you sure you want to proceed?`n"
+         $a="Management.Automation.Host.ChoiceDescription"
+         $answr= New-Object Collections.ObjectModel.Collection[$a]
+         $answr.Add((New-Object $a -ArgumentList "&Yes"))
+         $answr.Add((New-Object $a -ArgumentList "&No"))
+         $do= $Host.UI.PromptForChoice($txt, $ask,$answr, 0)
+         if ($do -eq 0) {
+           txt "`n`n Execute deleting files... "
+           $time= Measure-Command {$($del | ForEach-Object { Remove-Item $_.FullName -Force}) 2>$null} 
+           txt ".. Done in $([int]$time.TotalSeconds) seconds  `n"
+      
+           txt "`n`n Delete empty folders..."
+           function ChkFldr ($dir){if($(ls -Path $dir -Recurse -Force | Where {$_.Mode -like "-????*"}) 2>$null){$true; return};$false}
+           function DelFldr ($dir){if(ChkFldr $dir){.$GetDir | ForEach {DelFldr $_}}else{$(Remove-Item $_ -Force -Recurse) 2>$null}}
+           .$GetDir | ForEach {DelFldr $_}
+           Write-Host ".. Done`n" 
+      
+           $all= [int]$((($(ls -Path $dir -File -Recurse -Force) 2>$null | Where {$_.Length} | ForEach {$_.Length}) | Measure-Object  -Sum).Sum / 1MB)
+           txt "`n Folder $dir, size - $all MB`n"
+       }else{txt "`n  Abort!`n`n"}
+     }
+     return "OK"
    }
 
    $dir= "C:\`$Recycle.Bin"
@@ -745,12 +752,10 @@ function ClrRecycle {
    $(.$ScriptBlock) 2>$null
 
   }
-  Write-Host "`n   -= Press any key =- `n`n"
+  Write-Host "`n   -= Press any key =- `n"
   timeout 300 >$null
-  ' 
-
+ ' 
   Start-Process cmd -ArgumentList " /C powershell.exe  -EncodedCommand $([Convert]::ToBase64String([System.Text.Encoding]::Unicode.GetBytes($code)))"
-
 }
 
 
